@@ -215,20 +215,6 @@
 		.shot-frame:has(img) { padding: 0; }
 		.shot figcaption { margin-top: 10px; font-weight: 600; }
 
-		/* Depoimentos */
-		.quotes { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-		.quote { background: var(--neutral-100); border-radius: var(--radius-md); padding: 28px; display: flex; flex-direction: column; gap: 20px; }
-		.quote blockquote { font-size: 1.05rem; }
-		.quote blockquote::before { content: "“"; display: block; font-family: "Caprasimo", sans-serif; font-size: 3rem; line-height: .6; color: var(--accent); margin-bottom: 8px; }
-		.quote footer { display: flex; align-items: center; gap: 12px; padding: 0; font-size: .9rem; }
-		.quote .avatar { overflow: hidden; }
-		.quote .avatar img { width: 100%; height: 100%; object-fit: cover; }
-		.quote small { display: block; color: var(--neutral-600); }
-		.evidence { margin-top: 28px; display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-		.stat { background: var(--accent-2-200); color: var(--accent-2-800); border-radius: var(--radius-md); padding: 24px; }
-		.stat strong { display: block; font-family: "Caprasimo", sans-serif; font-weight: 400; font-size: 2.2rem; line-height: 1.1; }
-		[hidden] { display: none !important; }
-
 		/* Equipes */
 		.teams { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-top: 48px; }
 		.team-block h3 { font-size: 1.2rem; margin-bottom: 4px; }
@@ -248,7 +234,6 @@
 			<nav aria-label="Seções">
 				<a class="link" href="#recursos">Recursos</a>
 				<a class="link" href="#demo">Demonstração</a>
-				<a class="link" href="#depoimentos">Depoimentos</a>
 				<a class="link" href="#sobre">Sobre</a>
 				<a class="btn btn-primary" data-app="/">Acessar o app</a>
 			</nav>
@@ -448,39 +433,6 @@
 			</div>
 		</section>
 
-		<!-- Depoimentos / evidências de uso pelos colegas chilenos -->
-		<section id="depoimentos">
-			<div class="wrap">
-				<div class="section-head">
-					<p class="eyebrow">Depoimentos</p>
-					<h2>Quem testou no Chile</h2>
-					<p class="muted">Relatos e evidências de uso dos estudantes da Universidad Santo Tomás.</p>
-				</div>
-				<!-- Preencha com falas reais, autorizadas pelos colegas chilenos. Cartões sem texto não aparecem. -->
-				<div class="quotes">
-					<figure class="quote" hidden>
-						<blockquote></blockquote>
-						<footer><span class="avatar">—</span><div>Nome<small>Medicina Veterinária · UST</small></div></footer>
-					</figure>
-					<figure class="quote" hidden>
-						<blockquote></blockquote>
-						<footer><span class="avatar">—</span><div>Nome<small>Medicina Veterinária · UST</small></div></footer>
-					</figure>
-					<figure class="quote" hidden>
-						<blockquote></blockquote>
-						<footer><span class="avatar">—</span><div>Nome<small>Medicina Veterinária · UST</small></div></footer>
-					</figure>
-				</div>
-				<!-- Números reais dos testes. Itens sem número não aparecem. -->
-				<div class="evidence">
-					<div class="stat" hidden><strong></strong>estudantes testaram</div>
-					<div class="stat" hidden><strong></strong>quizzes jogados</div>
-					<div class="stat" hidden><strong></strong>perguntas respondidas</div>
-				</div>
-				<p class="muted" data-quotes-empty>Os depoimentos dos testes com a turma chilena entram aqui em breve.</p>
-			</div>
-		</section>
-
 		<!-- Sobre: parceria COIL + vídeo do desenvolvimento -->
 		<section id="sobre" class="alt-bg">
 			<div class="wrap">
@@ -524,7 +476,7 @@
 					</div>
 					<div class="team-block">
 						<h3>🇨🇱 Universidad Santo Tomás</h3>
-						<p class="muted">ZOO-00171 – Anatomía de Animales de Compañía</p>
+						<p class="muted">Anatomía de Animales de Compañía</p>
 						<ul class="team">
 							<li><span class="avatar">GB</span><div>Gabriela Bannura<small>Conteúdo e testes</small></div></li>
 							<li><span class="avatar">MM</span><div>Martín Alonso Martinez<small>Conteúdo e testes</small></div></li>
@@ -577,14 +529,6 @@
 			iframe.loading = "lazy";
 			box.replaceChildren(iframe);
 		});
-
-		// Depoimentos e números só aparecem quando preenchidos no HTML.
-		let algum = false;
-		document.querySelectorAll(".quote, .stat").forEach((el) => {
-			const texto = el.querySelector("blockquote, strong").textContent.trim();
-			if (texto) { el.hidden = false; algum = true; }
-		});
-		if (algum) document.querySelector("[data-quotes-empty]").hidden = true;
 	</script>
 </body>
 </html>
