@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>AnatoQuiz — Quiz interativo de Anatomia Veterinária</title>
+	<meta name="description" content="Crie e jogue quizzes visuais de anatomia veterinária: marque estruturas nas imagens das peças, responda e acompanhe sua pontuação." />
+	<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet" />
+	<style>
+		/* Mesmos tokens do design "Organic" do app (anatoquiz-front/src/index.css). */
+		:root {
+			--bg: #f5ead8;
+			--surface: #ebddc5;
+			--ink: #201e1d;
+			--divider: color-mix(in srgb, #201e1d 16%, transparent);
+			--accent: #c67139;
+			--accent-100: #fff2eb;
+			--accent-200: #ffe1d0;
+			--accent-700: #8c491a;
+			--accent-2: #7a8a5e;
+			--accent-2-200: #e1eecc;
+			--accent-2-300: #ccdbb2;
+			--accent-2-800: #3d472b;
+			--neutral-100: #f9f4ed;
+			--neutral-600: #82796a;
+			--radius-sm: 8px;
+			--radius-md: 16px;
+			--radius-lg: 28px;
+			--shadow-md: 0 3px 10px color-mix(in srgb, #2e2b25 16%, transparent);
+			--shadow-lg: 0 12px 32px color-mix(in srgb, #2e2b25 22%, transparent);
+		}
+		* { box-sizing: border-box; margin: 0; }
+		html { scroll-behavior: smooth; }
+		body {
+			background: var(--bg);
+			color: var(--ink);
+			font-family: "Figtree", system-ui, sans-serif;
+			line-height: 1.6;
+		}
+		h1, h2, h3 { font-family: "Caprasimo", system-ui, sans-serif; font-weight: 400; line-height: 1.15; }
+		a { color: inherit; }
+		.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+		.muted { color: color-mix(in srgb, var(--ink) 68%, transparent); }
+
+		/* Header */
+		header { position: sticky; top: 0; z-index: 10; background: var(--surface); border-bottom: 1px solid var(--divider); }
+		header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
+		.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: "Caprasimo", sans-serif; font-size: 1.25rem; }
+		.brand img { width: 30px; height: 30px; }
+		nav { display: flex; align-items: center; gap: 24px; font-size: .95rem; }
+		nav a { text-decoration: none; color: color-mix(in srgb, var(--ink) 65%, transparent); }
+		nav a:hover { color: var(--accent-700); }
+		@media (max-width: 760px) { nav .link { display: none; } }
+
+		/* Botões */
+		.btn {
+			display: inline-flex; align-items: center; gap: 8px;
+			padding: 12px 22px; border-radius: 999px; border: 2px solid transparent;
+			font-weight: 700; text-decoration: none; transition: transform .15s, background .15s;
+		}
+		.btn:hover { transform: translateY(-1px); }
+		.btn:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+		.btn-primary { background: var(--accent); color: var(--accent-100); }
+		.btn-primary:hover { background: #b2622d; }
+		.btn-ghost { border-color: var(--ink); color: var(--ink); }
+		nav .btn { padding: 8px 16px; font-size: .9rem; }
+
+		/* Hero */
+		.hero { padding: 72px 0 88px; }
+		.hero .wrap { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; }
+		.tag {
+			display: inline-block; padding: 6px 14px; border-radius: 999px;
+			background: var(--accent-2-200); color: var(--accent-2-800);
+			font-size: .85rem; font-weight: 600; margin-bottom: 20px;
+		}
+		.hero h1 { font-size: clamp(2.4rem, 5vw, 3.6rem); margin-bottom: 20px; }
+		.hero h1 em { font-style: normal; color: var(--accent); }
+		.hero p.lead { font-size: 1.15rem; margin-bottom: 32px; max-width: 34em; }
+		.ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+		@media (max-width: 900px) {
+			.hero { padding: 48px 0 64px; }
+			.hero .wrap { grid-template-columns: 1fr; gap: 40px; }
+		}
+
+		/* Mockup do jogo */
+		.mock {
+			background: var(--neutral-100); border-radius: var(--radius-lg);
+			box-shadow: var(--shadow-lg); padding: 20px; position: relative;
+		}
+		.mock-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: .85rem; }
+		.pill { padding: 4px 12px; border-radius: 999px; background: var(--surface); font-weight: 600; }
+		.pill.score { background: var(--accent-200); color: var(--accent-700); }
+		.mock-img { background: var(--surface); border-radius: var(--radius-md); aspect-ratio: 4 / 3; position: relative; overflow: hidden; }
+		.mock-img svg { width: 100%; height: 100%; display: block; }
+		.hotspot {
+			position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px;
+			border-radius: 50%; background: var(--accent); border: 3px solid var(--accent-100);
+			box-shadow: var(--shadow-md); color: var(--accent-100);
+			font-size: .75rem; font-weight: 700; display: grid; place-items: center;
+		}
+		.hotspot.active { animation: pulse 1.8s infinite; }
+		.hotspot.done { background: var(--accent-2); }
+		@keyframes pulse {
+			0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+			70% { box-shadow: 0 0 0 14px transparent; }
+			100% { box-shadow: 0 0 0 0 transparent; }
+		}
+		@media (prefers-reduced-motion: reduce) { .hotspot.active { animation: none; } .btn { transition: none; } }
+		.question {
+			position: absolute; right: -18px; bottom: -28px; width: min(270px, 78%);
+			background: #fff; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 16px;
+		}
+		.question strong { display: block; font-size: .95rem; margin-bottom: 10px; }
+		.alt { padding: 7px 12px; border-radius: var(--radius-sm); border: 1px solid var(--divider); font-size: .85rem; margin-bottom: 6px; }
+		.alt.right { background: var(--accent-2-200); border-color: var(--accent-2); color: var(--accent-2-800); font-weight: 600; }
+		.feedback { font-size: .8rem; font-weight: 700; color: var(--accent-2-800); margin-top: 4px; }
+		@media (max-width: 520px) { .question { position: static; width: auto; margin-top: 14px; box-shadow: var(--shadow-md); } }
+
+		/* Seções */
+		section { padding: 88px 0; }
+		.section-head { max-width: 640px; margin-bottom: 48px; }
+		.section-head h2 { font-size: clamp(1.9rem, 3.5vw, 2.6rem); margin-bottom: 12px; }
+		.eyebrow { font-weight: 700; font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-700); margin-bottom: 10px; }
+		.alt-bg { background: var(--surface); }
+
+		.grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+		.card { background: var(--neutral-100); border-radius: var(--radius-md); padding: 28px; box-shadow: 0 1px 2px color-mix(in srgb, #2e2b25 14%, transparent); }
+		.card h3 { font-size: 1.3rem; margin: 16px 0 8px; }
+		.icon {
+			width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center;
+			background: var(--accent-200); color: var(--accent-700);
+		}
+		.icon.green { background: var(--accent-2-200); color: var(--accent-2-800); }
+		.icon svg { width: 24px; height: 24px; }
+
+		/* Passos */
+		.steps { counter-reset: step; display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+		.step { counter-increment: step; position: relative; padding: 28px 28px 28px 88px; background: var(--bg); border-radius: var(--radius-md); }
+		.step::before {
+			content: counter(step); position: absolute; left: 24px; top: 24px;
+			width: 46px; height: 46px; border-radius: 50%; background: var(--accent); color: var(--accent-100);
+			font-family: "Caprasimo", sans-serif; font-size: 1.4rem; display: grid; place-items: center;
+		}
+		.step h3 { font-size: 1.2rem; margin-bottom: 6px; }
+
+		/* Modos */
+		.modes { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+		.mode { border-radius: var(--radius-lg); padding: 36px; }
+		.mode h3 { font-size: 1.6rem; margin-bottom: 10px; }
+		.mode.a { background: var(--neutral-100); border: 2px solid var(--divider); }
+		.mode.b { background: var(--accent); color: var(--accent-100); }
+		.mode.b .muted { color: color-mix(in srgb, var(--accent-100) 85%, transparent); }
+		.badge { display: inline-block; font-weight: 700; font-size: .85rem; padding: 4px 12px; border-radius: 999px; margin-bottom: 18px; }
+		.mode.a .badge { background: var(--surface); }
+		.mode.b .badge { background: var(--accent-100); color: var(--accent-700); }
+
+		/* Sobre */
+		.about { display: grid; grid-template-columns: 1.2fr 1fr; gap: 48px; align-items: start; }
+		@media (max-width: 860px) { .about { grid-template-columns: 1fr; } }
+		.about p + p { margin-top: 14px; }
+		.team { list-style: none; padding: 0; display: grid; gap: 12px; }
+		.team li { display: flex; align-items: center; gap: 14px; background: var(--neutral-100); padding: 12px 16px; border-radius: var(--radius-md); }
+		.avatar {
+			width: 40px; height: 40px; border-radius: 50%; flex: none;
+			background: var(--accent-2-300); color: var(--accent-2-800);
+			display: grid; place-items: center; font-weight: 700; font-size: .85rem;
+		}
+		.team small { display: block; color: var(--neutral-600); }
+		.stack { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+		.stack span { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--divider); font-size: .85rem; font-weight: 600; }
+
+		/* CTA final */
+		.cta {
+			background: var(--ink); color: var(--bg); border-radius: var(--radius-lg);
+			padding: 56px 40px; text-align: center;
+		}
+		.cta h2 { font-size: clamp(1.9rem, 4vw, 2.8rem); margin-bottom: 12px; }
+		.cta p { color: color-mix(in srgb, var(--bg) 75%, transparent); margin-bottom: 28px; }
+		.cta .ctas { justify-content: center; }
+
+		/* Público-alvo */
+		.audience { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+		.audience .card h3 { margin-top: 0; }
+
+		/* Vídeos */
+		.video {
+			aspect-ratio: 16 / 9; border-radius: var(--radius-lg); overflow: hidden;
+			background: var(--ink); color: var(--bg); box-shadow: var(--shadow-lg);
+			display: grid; place-items: center; text-align: center; padding: 24px;
+		}
+		.video iframe { width: 100%; height: 100%; border: 0; display: block; }
+		.video:has(iframe) { padding: 0; }
+		.video .play {
+			width: 72px; height: 72px; border-radius: 50%; background: var(--accent);
+			display: grid; place-items: center; margin: 0 auto 14px;
+		}
+		.video .play svg { width: 28px; height: 28px; margin-left: 4px; }
+		.video p { color: color-mix(in srgb, var(--bg) 70%, transparent); font-size: .95rem; }
+		.video-points { display: grid; gap: 12px; margin-top: 24px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); list-style: none; padding: 0; }
+		.video-points li { padding-left: 28px; position: relative; }
+		.video-points li::before { content: "✓"; position: absolute; left: 0; color: var(--accent-2); font-weight: 700; }
+
+		/* Galeria de telas */
+		.shots { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+		.shot { margin: 0; }
+		.shot-frame {
+			aspect-ratio: 16 / 10; border-radius: var(--radius-md); overflow: hidden;
+			background: var(--neutral-100); border: 1px solid var(--divider); box-shadow: var(--shadow-md);
+			display: grid; place-items: center; color: var(--neutral-600); font-size: .9rem; text-align: center; padding: 12px;
+		}
+		.shot-frame img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+		.shot-frame:has(img) { padding: 0; }
+		.shot figcaption { margin-top: 10px; font-weight: 600; }
+
+		/* Depoimentos */
+		.quotes { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+		.quote { background: var(--neutral-100); border-radius: var(--radius-md); padding: 28px; display: flex; flex-direction: column; gap: 20px; }
+		.quote blockquote { font-size: 1.05rem; }
+		.quote blockquote::before { content: "“"; display: block; font-family: "Caprasimo", sans-serif; font-size: 3rem; line-height: .6; color: var(--accent); margin-bottom: 8px; }
+		.quote footer { display: flex; align-items: center; gap: 12px; padding: 0; font-size: .9rem; }
+		.quote .avatar { overflow: hidden; }
+		.quote .avatar img { width: 100%; height: 100%; object-fit: cover; }
+		.quote small { display: block; color: var(--neutral-600); }
+		.evidence { margin-top: 28px; display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+		.stat { background: var(--accent-2-200); color: var(--accent-2-800); border-radius: var(--radius-md); padding: 24px; }
+		.stat strong { display: block; font-family: "Caprasimo", sans-serif; font-weight: 400; font-size: 2.2rem; line-height: 1.1; }
+		[hidden] { display: none !important; }
+
+		/* Equipes */
+		.teams { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-top: 48px; }
+		.team-block h3 { font-size: 1.2rem; margin-bottom: 4px; }
+		.team-block > p { font-size: .9rem; margin-bottom: 14px; }
+		.team .avatar { overflow: hidden; }
+		.team .avatar img { width: 100%; height: 100%; object-fit: cover; }
+		.team li.lead .avatar { background: var(--accent-200); color: var(--accent-700); }
+
+		footer { padding: 32px 0 48px; font-size: .9rem; }
+		footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+	</style>
+</head>
+<body>
+	<header>
+		<div class="wrap">
+			<a href="#" class="brand"><img src="favicon.svg" alt="" />AnatoQuiz</a>
+			<nav aria-label="Seções">
+				<a class="link" href="#recursos">Recursos</a>
+				<a class="link" href="#demo">Demonstração</a>
+				<a class="link" href="#depoimentos">Depoimentos</a>
+				<a class="link" href="#sobre">Sobre</a>
+				<a class="btn btn-primary" data-app="/">Acessar o app</a>
+			</nav>
+		</div>
+	</header>
+
+	<main>
+		<section class="hero">
+			<div class="wrap">
+				<div>
+					<span class="tag">Projeto binacional · COIL UFSM 🇧🇷 · UST 🇨🇱 · 2026</span>
+					<h1>Estude anatomia veterinária <em>clicando</em> nas estruturas.</h1>
+					<p class="lead muted">
+						O AnatoQuiz é um quiz interativo de Anatomia Veterinária que troca o atlas estático por
+						autoavaliação visual: fotos reais das peças, estruturas marcadas na imagem e feedback na hora.
+					</p>
+					<div class="ctas">
+						<a class="btn btn-primary" data-app="/signup">Acessar o AnatoQuiz →</a>
+						<a class="btn btn-ghost" href="#demo">Ver demonstração</a>
+					</div>
+				</div>
+
+				<div class="mock" aria-label="Exemplo ilustrativo de tela do jogo: imagem de um fêmur com pontos marcados e uma pergunta de múltipla escolha" role="img">
+					<div class="mock-top">
+						<span class="pill">Fêmur · vista lateral</span>
+						<span class="pill score">120 pts</span>
+					</div>
+					<div class="mock-img">
+						<svg viewBox="0 0 400 300" aria-hidden="true">
+							<g transform="rotate(-28 200 150)" fill="#f9f4ed" stroke="#c0b6a5" stroke-width="3">
+								<rect x="95" y="132" width="210" height="36" rx="16" />
+								<circle cx="92" cy="128" r="30" />
+								<circle cx="98" cy="174" r="24" />
+								<circle cx="306" cy="126" r="26" />
+								<circle cx="310" cy="172" r="26" />
+							</g>
+						</svg>
+						<span class="hotspot done" style="left: 26%; top: 30%">✓</span>
+						<span class="hotspot active" style="left: 49%; top: 49%">2</span>
+						<span class="hotspot" style="left: 76%; top: 70%">3</span>
+					</div>
+					<div class="question">
+						<strong>Que estrutura está marcada?</strong>
+						<div class="alt">Trocânter maior</div>
+						<div class="alt right">Diáfise do fêmur</div>
+						<div class="alt">Côndilo lateral</div>
+						<p class="feedback">✓ Acertou de primeira! +20 pontos</p>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Finalidade e público-alvo -->
+		<section id="para-quem" class="alt-bg">
+			<div class="wrap">
+				<div class="section-head">
+					<p class="eyebrow">Para quem é</p>
+					<h2>Feito pra quem precisa reconhecer estrutura por estrutura</h2>
+					<p class="muted">
+						A finalidade do AnatoQuiz é apoiar o estudo da disciplina <strong>ZOO-00171 – Anatomía de Animales de Compañía</strong>
+						(Universidad Santo Tomás, Chile), transformando atlas, livros e slides numa ferramenta de autoavaliação visual.
+					</p>
+				</div>
+				<div class="audience">
+					<article class="card">
+						<h3>Estudantes de Medicina Veterinária</h3>
+						<p class="muted">Revisam peças anatômicas no próprio ritmo, testam o que sabem e veem a evolução da pontuação.</p>
+					</article>
+					<article class="card">
+						<h3>Professores e monitores</h3>
+						<p class="muted">Montam quizzes com as fotos das peças usadas em aula e compartilham com a turma.</p>
+					</article>
+					<article class="card">
+						<h3>Turmas do Brasil e do Chile</h3>
+						<p class="muted">Interface em português e espanhol, pra estudar o mesmo conteúdo dos dois lados da parceria.</p>
+					</article>
+				</div>
+			</div>
+		</section>
+
+		<section id="recursos">
+			<div class="wrap">
+				<div class="section-head">
+					<p class="eyebrow">Principais funcionalidades</p>
+					<h2>Tudo pra transformar a peça em pergunta</h2>
+				</div>
+				<div class="grid">
+					<article class="card">
+						<div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-8 8"/></svg></div>
+						<h3>Várias vistas por peça</h3>
+						<p class="muted">Envie fotos anterior, posterior e laterais da mesma peça anatômica.</p>
+					</article>
+					<article class="card">
+						<div class="icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg></div>
+						<h3>Editor de hotspots</h3>
+						<p class="muted">Clique pra marcar um ponto ou arraste pra marcar uma região da imagem.</p>
+					</article>
+					<article class="card">
+						<div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+						<h3>Feedback imediato</h3>
+						<p class="muted">Acertou ou errou, você sabe na hora e já parte pra próxima estrutura.</p>
+					</article>
+					<article class="card">
+						<div class="icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></div>
+						<h3>Pontos e ranking</h3>
+						<p class="muted">Pontuação por quiz, histórico pessoal e ranking geral e por quiz.</p>
+					</article>
+					<article class="card">
+						<div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+						<h3>Quizzes públicos</h3>
+						<p class="muted">Busque quizzes criados por colegas e professores e jogue quando quiser.</p>
+					</article>
+					<article class="card">
+						<div class="icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+						<h3>Português e espanhol</h3>
+						<p class="muted">Interface bilíngue, feita pra turma Brasil–Chile estudar junta.</p>
+					</article>
+				</div>
+			</div>
+		</section>
+
+		<section id="como-funciona" class="alt-bg">
+			<div class="wrap">
+				<div class="section-head">
+					<p class="eyebrow">Como funciona</p>
+					<h2>Monte um quiz em três passos</h2>
+					<p class="muted">Tudo é salvo automaticamente: dados do quiz, peças, imagens, pontos e perguntas.</p>
+				</div>
+				<div class="steps" style="margin-bottom: 72px">
+					<div class="step"><h3>Dados do quiz</h3><p class="muted">Dê um título, uma descrição e escolha se ele é público.</p></div>
+					<div class="step"><h3>Peça e imagem</h3><p class="muted">Cadastre a peça (ex: “Fêmur”), o sistema anatômico e envie as fotos de cada ângulo.</p></div>
+					<div class="step"><h3>Pontos e perguntas</h3><p class="muted">Marque as estruturas na imagem e escreva uma pergunta de múltipla escolha pra cada uma.</p></div>
+				</div>
+
+				<div class="section-head">
+					<p class="eyebrow">Dois jeitos de jogar</p>
+					<h2>Arrisque de cabeça e ganhe em dobro</h2>
+				</div>
+				<div class="modes">
+					<div class="mode a">
+						<span class="badge">1× pontos</span>
+						<h3>Múltipla escolha</h3>
+						<p class="muted">Veja 4 alternativas e escolha a estrutura certa. Ótimo pra revisar e fixar nomes.</p>
+					</div>
+					<div class="mode b">
+						<span class="badge">2× pontos</span>
+						<h3>Resposta livre</h3>
+						<p class="muted">Digite o nome da estrutura antes de ver as alternativas. Acertou de primeira? Pontuação em dobro.</p>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Imagens do aplicativo: salve as capturas em img/ com estes nomes -->
+		<section id="telas">
+			<div class="wrap">
+				<div class="section-head">
+					<p class="eyebrow">Por dentro do app</p>
+					<h2>Veja as telas</h2>
+				</div>
+				<div class="shots">
+					<figure class="shot">
+						<div class="shot-frame"><img src="img/tela-criar.png" alt="Tela de criação de quiz com o editor de hotspots" loading="lazy" onerror="this.replaceWith('Captura: img/tela-criar.png')" /></div>
+						<figcaption>Editor de quiz e hotspots</figcaption>
+					</figure>
+					<figure class="shot">
+						<div class="shot-frame"><img src="img/tela-jogar.png" alt="Tela de jogo com uma pergunta sobre uma estrutura marcada na peça" loading="lazy" onerror="this.replaceWith('Captura: img/tela-jogar.png')" /></div>
+						<figcaption>Jogando um quiz</figcaption>
+					</figure>
+					<figure class="shot">
+						<div class="shot-frame"><img src="img/tela-ranking.png" alt="Tela de ranking geral com a pontuação dos usuários" loading="lazy" onerror="this.replaceWith('Captura: img/tela-ranking.png')" /></div>
+						<figcaption>Resultado e ranking</figcaption>
+					</figure>
+				</div>
+			</div>
+		</section>
+
+		<!-- Vídeo de demonstração -->
+		<section id="demo" class="alt-bg">
+			<div class="wrap">
+				<div class="section-head">
+					<p class="eyebrow">Vídeo de demonstração</p>
+					<h2>O AnatoQuiz numa situação real de estudo</h2>
+					<p class="muted">Como o app apoia a aprendizagem de anatomia, do cadastro da peça à revisão antes da prova.</p>
+				</div>
+				<div class="video" data-video="demo" role="region" aria-label="Vídeo de demonstração">
+					<div>
+						<div class="play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></div>
+						<p>Vídeo de demonstração em breve</p>
+					</div>
+				</div>
+				<ul class="video-points">
+					<li>Uso concreto em aula de anatomia</li>
+					<li>Criação de um quiz a partir de fotos das peças</li>
+					<li>Registros dos testes com estudantes chilenos</li>
+				</ul>
+			</div>
+		</section>
+
+		<!-- Depoimentos / evidências de uso pelos colegas chilenos -->
+		<section id="depoimentos">
+			<div class="wrap">
+				<div class="section-head">
+					<p class="eyebrow">Depoimentos</p>
+					<h2>Quem testou no Chile</h2>
+					<p class="muted">Relatos e evidências de uso dos estudantes da Universidad Santo Tomás.</p>
+				</div>
+				<!-- Preencha com falas reais, autorizadas pelos colegas chilenos. Cartões sem texto não aparecem. -->
+				<div class="quotes">
+					<figure class="quote" hidden>
+						<blockquote></blockquote>
+						<footer><span class="avatar">—</span><div>Nome<small>Medicina Veterinária · UST</small></div></footer>
+					</figure>
+					<figure class="quote" hidden>
+						<blockquote></blockquote>
+						<footer><span class="avatar">—</span><div>Nome<small>Medicina Veterinária · UST</small></div></footer>
+					</figure>
+					<figure class="quote" hidden>
+						<blockquote></blockquote>
+						<footer><span class="avatar">—</span><div>Nome<small>Medicina Veterinária · UST</small></div></footer>
+					</figure>
+				</div>
+				<!-- Números reais dos testes. Itens sem número não aparecem. -->
+				<div class="evidence">
+					<div class="stat" hidden><strong></strong>estudantes testaram</div>
+					<div class="stat" hidden><strong></strong>quizzes jogados</div>
+					<div class="stat" hidden><strong></strong>perguntas respondidas</div>
+				</div>
+				<p class="muted" data-quotes-empty>Os depoimentos dos testes com a turma chilena entram aqui em breve.</p>
+			</div>
+		</section>
+
+		<!-- Sobre: parceria COIL + vídeo do desenvolvimento -->
+		<section id="sobre" class="alt-bg">
+			<div class="wrap">
+				<div class="about">
+					<div>
+						<p class="eyebrow">Sobre</p>
+						<h2 style="font-size: clamp(1.9rem, 3.5vw, 2.6rem); margin-bottom: 20px">Um produto binacional, feito em parceria COIL</h2>
+						<p class="muted">
+							O AnatoQuiz nasceu no programa <strong>COIL UFSM–UST 2026</strong> (Collaborative Online International Learning),
+							parceria entre a <strong>Universidade Federal de Santa Maria</strong> (Brasil) e a
+							<strong>Universidad Santo Tomás</strong> de Santiago (Chile).
+						</p>
+						<p class="muted">
+							Do lado chileno, estudantes de Medicina Veterinária trouxeram o problema, as peças e os testes de uso.
+							Do lado brasileiro, a equipe de Projeto de Software II (UFSM) desenhou e desenvolveu a aplicação.
+						</p>
+						<div class="stack" aria-label="Tecnologias">
+							<span>React 19</span><span>TypeScript</span><span>Vite</span><span>Tailwind CSS</span><span>Supabase</span><span>Vercel</span>
+						</div>
+					</div>
+					<div>
+						<div class="video" data-video="making-of" role="region" aria-label="Vídeo do desenvolvimento (making of)">
+							<div>
+								<div class="play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></div>
+								<p>Making of: equipes, arquitetura, desafios e aprendizados</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="teams">
+					<div class="team-block">
+						<h3>🇧🇷 UFSM</h3>
+						<p class="muted">Projeto de Software II</p>
+						<ul class="team">
+							<li class="lead"><span class="avatar">CT</span><div>Prof. Celio Trois<small>Orientador</small></div></li>
+							<li><span class="avatar">BC</span><div>Bruna Caetano<small>Desenvolvimento</small></div></li>
+							<li><span class="avatar">DS</span><div>Diogo De Los Santos<small>Desenvolvimento</small></div></li>
+							<li><span class="avatar">VB</span><div>Victor Brum<small>Desenvolvimento</small></div></li>
+							<li><span class="avatar">IC</span><div>Igor Cantarelli<small>Desenvolvimento</small></div></li>
+						</ul>
+					</div>
+					<div class="team-block">
+						<h3>🇨🇱 Universidad Santo Tomás</h3>
+						<p class="muted">ZOO-00171 – Anatomía de Animales de Compañía</p>
+						<!-- Preencha com orientador(a) e estudantes chilenos (com autorização). -->
+						<ul class="team">
+							<li class="lead"><span class="avatar">?</span><div>Professor(a) orientador(a)<small>Orientação</small></div></li>
+							<li><span class="avatar">?</span><div>Estudantes de Medicina Veterinária<small>Conteúdo e testes</small></div></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section id="app">
+			<div class="wrap">
+				<div class="cta">
+					<h2>Pronto pra testar o que você sabe?</h2>
+					<p>Crie sua conta em segundos e jogue o primeiro quiz.</p>
+					<div class="ctas">
+						<a class="btn btn-primary" data-app="/signup">Criar conta</a>
+						<a class="btn btn-ghost" style="border-color: var(--bg); color: var(--bg)" data-app="/login">Já tenho conta</a>
+					</div>
+				</div>
+			</div>
+		</section>
+	</main>
+
+	<footer>
+		<div class="wrap muted">
+			<span>© 2026 AnatoQuiz · COIL UFSM–UST</span>
+			<span>Feito em Santa Maria 🇧🇷 e Santiago 🇨🇱</span>
+		</div>
+	</footer>
+
+	<script>
+		// ===== Configuração: único lugar a editar =====
+		const APP_URL = ""; // ex: "https://anatoquiz.vercel.app" (sem barra no final)
+		const VIDEOS = {
+			demo: "",       // ID do YouTube do vídeo de demonstração (ex: "dQw4w9WgXcQ")
+			"making-of": "", // ID do YouTube do vídeo do desenvolvimento
+		};
+		// ==============================================
+
+		document.querySelectorAll("[data-app]").forEach((a) => {
+			a.href = APP_URL ? APP_URL + a.dataset.app : "#app";
+		});
+
+		document.querySelectorAll("[data-video]").forEach((box) => {
+			const id = VIDEOS[box.dataset.video];
+			if (!id) return;
+			const iframe = document.createElement("iframe");
+			iframe.src = "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(id);
+			iframe.title = box.getAttribute("aria-label");
+			iframe.allow = "accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen";
+			iframe.loading = "lazy";
+			box.replaceChildren(iframe);
+		});
+
+		// Depoimentos e números só aparecem quando preenchidos no HTML.
+		let algum = false;
+		document.querySelectorAll(".quote, .stat").forEach((el) => {
+			const texto = el.querySelector("blockquote, strong").textContent.trim();
+			if (texto) { el.hidden = false; algum = true; }
+		});
+		if (algum) document.querySelector("[data-quotes-empty]").hidden = true;
+	</script>
+</body>
+</html>
