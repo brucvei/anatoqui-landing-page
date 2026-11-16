@@ -558,13 +558,11 @@
 	</footer>
 
 	<script>
-		// ===== Configuração: único lugar a editar =====
-		const APP_URL = ""; // ex: "https://anatoquiz.vercel.app" (sem barra no final)
+		const APP_URL = "https://anatoquiz-front.vercel.app";
 		const VIDEOS = {
 			demo: "",       // ID do YouTube do vídeo de demonstração (ex: "dQw4w9WgXcQ")
 			"making-of": "", // ID do YouTube do vídeo do desenvolvimento
 		};
-		// ==============================================
 
 		document.querySelectorAll("[data-app]").forEach((a) => {
 			a.href = APP_URL ? APP_URL + a.dataset.app : "#app";
